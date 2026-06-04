@@ -31,9 +31,8 @@ self.addEventListener("fetch", (event) => {
   if (!event.request.url.startsWith(self.location.origin)) return;
   // Skip API calls from caching
   if (event.request.url.includes("/api/")) return;
-  // Skip Next.js internal assets, HMR, and webpack dev server calls from caching
+  // Skip HMR and webpack dev server calls from caching
   if (
-    event.request.url.includes("/_next/") ||
     event.request.url.includes("webpack-hmr") ||
     event.request.url.includes("__next_locale")
   ) {
