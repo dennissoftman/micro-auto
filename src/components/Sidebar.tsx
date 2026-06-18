@@ -95,10 +95,11 @@ export function Sidebar() {
         {/* Sync Status Indicator */}
         <button
           onClick={handleCloudClick}
-          className={`flex items-center p-1.5 rounded-lg transition-all ${syncState === "offline"
+          className={`flex items-center p-1.5 rounded-lg transition-all ${
+            syncState === "offline"
               ? "cursor-not-allowed opacity-50"
               : "hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-            }`}
+          }`}
           title={t("syncStatus", { status: getSyncStateName() })}
           disabled={syncState === "offline"}
         >

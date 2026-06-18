@@ -26,8 +26,7 @@ export const dictionaries = {
     tryAdjustingSearch: "Try adjusting your search terms.",
     getStartedAdding:
       "Get started by adding your first client and car to the system.",
-    getStartedAddingCar:
-      "Get started by adding your first car to the system.",
+    getStartedAddingCar: "Get started by adding your first car to the system.",
     addFirstCar: "Add your first car",
     owner: "Owner",
     back: "Back",
@@ -233,8 +232,7 @@ export const dictionaries = {
       "У вас {count}/10 авто. После лимита можно будет редактировать существующие записи, но не добавлять новые.",
     noCarsFound: "Авто не найдены",
     tryAdjustingSearch: "Попробуйте изменить запрос.",
-    getStartedAdding:
-      "Добавьте первого клиента и авто, чтобы начать работу.",
+    getStartedAdding: "Добавьте первого клиента и авто, чтобы начать работу.",
     getStartedAddingCar: "Добавьте первое авто, чтобы начать работу.",
     addFirstCar: "Добавить первое авто",
     owner: "Владелец",
@@ -329,8 +327,7 @@ export const dictionaries = {
     doesNotMatchFormat: "Госномер не соответствует требуемому формату",
     exportData: "Экспорт данных",
     importData: "Импорт данных",
-    confirmImport:
-      "Импорт перезапишет текущие данные. Продолжить?",
+    confirmImport: "Импорт перезапишет текущие данные. Продолжить?",
     importSuccess: "Данные импортированы.",
     importError: "Не удалось импортировать данные",
     specifications: "Характеристики и заметки",
@@ -406,8 +403,7 @@ export const dictionaries = {
       "Выберите базовые настройки перед добавлением или импортом авто.",
     clientTracking: "Учет клиентов",
     trackClients: "С клиентами",
-    trackClientsDesc:
-      "Хранить имена, телефоны, долги и авто клиентов вместе.",
+    trackClientsDesc: "Хранить имена, телефоны, долги и авто клиентов вместе.",
     carsOnly: "Без клиентов",
     carsOnlyDesc:
       "Работать только с авто. Для совместимости у каждого авто будет скрытый владелец.",

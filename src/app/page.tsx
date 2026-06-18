@@ -22,6 +22,7 @@ import { db } from "@/lib/db";
 import type { Car } from "@/lib/db";
 import { useAppPreferences } from "@/lib/appPreferences";
 import { useLocalStorage } from "@/lib/useLocalStorage";
+import { DASH_VIEW_MODE_KEY } from "@/lib/storageKeys";
 
 type SortField = "plate" | "model" | "year" | "lastMaintenance";
 type SortDir = "asc" | "desc";
@@ -70,7 +71,7 @@ export default function Dashboard() {
   const { usesClients } = useAppPreferences();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useLocalStorage<"grid" | "list">(
-    "dashViewMode",
+    DASH_VIEW_MODE_KEY,
     "grid",
   );
   const [sortField, setSortField] = useState<SortField>("plate");
@@ -80,14 +81,17 @@ export default function Dashboard() {
     setViewMode(mode);
   };
 
-  const handleSort = useCallback((field: SortField) => {
-    if (field === sortField) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDir("asc");
-    }
-  }, [sortField]);
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (field === sortField) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      } else {
+        setSortField(field);
+        setSortDir("asc");
+      }
+    },
+    [sortField],
+  );
 
   const cleanSearchTerm = searchTerm.trim();
 
@@ -122,9 +126,12 @@ export default function Dashboard() {
     return map;
   }, []);
 
-  const getOwnerName = useCallback((ownerId: string) => {
-    return owners?.find((o) => o.id === ownerId)?.name || "Unknown Client";
-  }, [owners]);
+  const getOwnerName = useCallback(
+    (ownerId: string) => {
+      return owners?.find((o) => o.id === ownerId)?.name || "Unknown Client";
+    },
+    [owners],
+  );
 
   const searchIndex = React.useMemo(() => {
     if (!cars) return null;
@@ -185,7 +192,9 @@ export default function Dashboard() {
             <input
               type="text"
               placeholder={
-                usesClients ? t("searchPlaceholder") : t("searchCarsPlaceholder")
+                usesClients
+                  ? t("searchPlaceholder")
+                  : t("searchCarsPlaceholder")
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -198,20 +207,22 @@ export default function Dashboard() {
             <button
               onClick={() => toggleView("grid")}
               title={t("viewGrid")}
-              className={`p-2 transition-colors cursor-pointer ${viewMode === "grid"
+              className={`p-2 transition-colors cursor-pointer ${
+                viewMode === "grid"
                   ? "bg-primary text-primary-foreground"
                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                }`}
+              }`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => toggleView("list")}
               title={t("viewList")}
-              className={`p-2 transition-colors cursor-pointer ${viewMode === "list"
+              className={`p-2 transition-colors cursor-pointer ${
+                viewMode === "list"
                   ? "bg-primary text-primary-foreground"
                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                }`}
+              }`}
             >
               <List className="w-4 h-4" />
             </button>

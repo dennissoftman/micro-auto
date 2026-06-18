@@ -8,10 +8,20 @@ const dispatchStorageEvent = (key: string, newValue: string | null) => {
   }
 };
 
+const subscribeToClientReady = () => () => {};
+
+const getClientReadySnapshot = () => typeof window !== "undefined";
+
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const initialValueString = useMemo(
     () => JSON.stringify(initialValue),
     [initialValue],
+  );
+
+  const isReady = useSyncExternalStore(
+    subscribeToClientReady,
+    getClientReadySnapshot,
+    () => false,
   );
 
   const getSnapshot = useCallback(() => {
@@ -75,5 +85,5 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     [key, parsedValue],
   );
 
-  return [parsedValue, setValue] as const;
+  return [parsedValue, setValue, isReady] as const;
 }

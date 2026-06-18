@@ -36,6 +36,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { locale, setLocale, t } = useI18n();
   const {
     onboardingComplete,
+    preferencesReady,
     setOnboardingComplete,
     clientTrackingMode,
     setClientTrackingMode,
@@ -43,6 +44,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState("");
 
+  if (!preferencesReady) return null;
   if (onboardingComplete) return <>{children}</>;
 
   const selectedTheme = (theme || "system") as ThemeChoice;
@@ -62,9 +64,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
       await importBackup(file);
       setOnboardingComplete(true);
     } catch (error) {
-      setImportError(
-        error instanceof Error ? error.message : t("importError"),
-      );
+      setImportError(error instanceof Error ? error.message : t("importError"));
     } finally {
       setIsImporting(false);
       event.target.value = "";
@@ -76,7 +76,11 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     label: string;
     icon: React.ReactNode;
   }> = [
-    { value: "system", label: t("system"), icon: <Monitor className="w-4 h-4" /> },
+    {
+      value: "system",
+      label: t("system"),
+      icon: <Monitor className="w-4 h-4" />,
+    },
     { value: "light", label: t("light"), icon: <Sun className="w-4 h-4" /> },
     { value: "dark", label: t("dark"), icon: <Moon className="w-4 h-4" /> },
   ];
@@ -119,9 +123,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr]">
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold">
-                  {t("welcomeSetup")}
-                </h2>
+                <h2 className="text-xl font-semibold">{t("welcomeSetup")}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   {t("welcomeSetupDesc")}
                 </p>

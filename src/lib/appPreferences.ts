@@ -1,17 +1,18 @@
 "use client";
 
 import { useLocalStorage } from "./useLocalStorage";
+import {
+  CLIENT_TRACKING_MODE_KEY,
+  ONBOARDING_COMPLETE_KEY,
+} from "./storageKeys";
 
-export const ONBOARDING_COMPLETE_KEY = "onboardingComplete";
-export const CLIENT_TRACKING_MODE_KEY = "clientTrackingMode";
+export { CLIENT_TRACKING_MODE_KEY, ONBOARDING_COMPLETE_KEY };
 
 export type ClientTrackingMode = "clients" | "cars_only";
 
 export function useAppPreferences() {
-  const [onboardingComplete, setOnboardingComplete] = useLocalStorage(
-    ONBOARDING_COMPLETE_KEY,
-    false,
-  );
+  const [onboardingComplete, setOnboardingComplete, onboardingReady] =
+    useLocalStorage(ONBOARDING_COMPLETE_KEY, false);
   const [clientTrackingMode, setClientTrackingMode] =
     useLocalStorage<ClientTrackingMode>(CLIENT_TRACKING_MODE_KEY, "clients");
 
@@ -21,5 +22,6 @@ export function useAppPreferences() {
     clientTrackingMode,
     setClientTrackingMode,
     usesClients: clientTrackingMode === "clients",
+    preferencesReady: onboardingReady,
   };
 }

@@ -17,9 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className="font-sans min-h-screen flex flex-col md:flex-row antialiased"
-      >
+      <body className="font-sans min-h-screen flex flex-col md:flex-row antialiased">
         <Providers>
           <Sidebar />
           {/* Main Content Area */}

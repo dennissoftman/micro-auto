@@ -9,7 +9,14 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const version = randomUUID();
 const versionFile = path.join(rootDir, "public", "api", "version.json");
-const nextBin = path.join(rootDir, "node_modules", "next", "dist", "bin", "next");
+const nextBin = path.join(
+  rootDir,
+  "node_modules",
+  "next",
+  "dist",
+  "bin",
+  "next",
+);
 
 fs.mkdirSync(path.dirname(versionFile), { recursive: true });
 fs.writeFileSync(

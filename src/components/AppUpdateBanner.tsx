@@ -13,10 +13,12 @@ type VersionResponse = {
 
 export function AppUpdateBanner() {
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
-  const [dismissedVersion, setDismissedVersion] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(DISMISSED_VERSION_KEY);
-  });
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(
+    () => {
+      if (typeof window === "undefined") return null;
+      return window.localStorage.getItem(DISMISSED_VERSION_KEY);
+    },
+  );
 
   const updateServiceWorker = useCallback(async () => {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {

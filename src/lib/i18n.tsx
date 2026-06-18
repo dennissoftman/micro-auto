@@ -3,6 +3,7 @@
 import React, { createContext, useContext } from "react";
 import { dictionaries, Locale } from "./dictionaries";
 import { useLocalStorage } from "./useLocalStorage";
+import { LOCALE_KEY } from "./storageKeys";
 
 type I18nContextType = {
   locale: Locale;
@@ -18,7 +19,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 function getDefaultLocale(): Locale {
   if (typeof window === "undefined") return "en";
 
-  const saved = localStorage.getItem("locale") as Locale | null;
+  const saved = localStorage.getItem(LOCALE_KEY) as Locale | null;
   if (saved && dictionaries[saved]) return saved;
 
   const browserLanguage = navigator.language.toLowerCase();
@@ -29,7 +30,7 @@ function getDefaultLocale(): Locale {
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useLocalStorage<Locale>(
-    "locale",
+    LOCALE_KEY,
     getDefaultLocale(),
   );
 

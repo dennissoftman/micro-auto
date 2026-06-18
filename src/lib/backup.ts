@@ -1,9 +1,24 @@
 import JSZip from "jszip";
-import { db, type Car, type ImageAttachment, type MaintenanceEvent, type Owner } from "./db";
+import {
+  db,
+  type Car,
+  type ImageAttachment,
+  type MaintenanceEvent,
+  type Owner,
+} from "./db";
+import {
+  ONBOARDING_COMPLETE_KEY,
+  PORTABLE_LOCAL_STORAGE_KEYS,
+  type PortableLocalStorageKey,
+} from "./storageKeys";
 
 type BackupImageMetadata = Omit<ImageAttachment, "blob">;
 
+type BackupSettings = Partial<Record<PortableLocalStorageKey, string>>;
+
 type BackupData = {
+  version?: number;
+  exportedAt?: string;
   owners?: Array<Owner & { createdAt: string; updatedAt: string }>;
   cars?: Array<Car & { createdAt: string; updatedAt: string }>;
   maintenanceEvents?: Array<
@@ -19,10 +34,54 @@ type BackupData = {
       deletedAt?: string;
     }
   >;
+  settings?: BackupSettings;
 };
 
 const toErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown error";
+
+const writeLocalStorageValue = (key: string, newValue: string) => {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(key, newValue);
+  window.dispatchEvent(new StorageEvent("storage", { key, newValue }));
+};
+
+const collectPortableSettings = () => {
+  if (typeof window === "undefined") return {};
+
+  return PORTABLE_LOCAL_STORAGE_KEYS.reduce<BackupSettings>((settings, key) => {
+    const value = window.localStorage.getItem(key);
+    if (value !== null) {
+      settings[key] = value;
+    }
+    return settings;
+  }, {});
+};
+
+const restorePortableSettings = (settings?: BackupData["settings"]) => {
+  if (typeof window === "undefined" || !settings) return;
+
+  for (const key of PORTABLE_LOCAL_STORAGE_KEYS) {
+    const value = settings[key];
+    if (typeof value === "string") {
+      writeLocalStorageValue(key, value);
+    }
+  }
+};
+
+const markOnboardingComplete = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    writeLocalStorageValue(ONBOARDING_COMPLETE_KEY, JSON.stringify(true));
+  } catch (error) {
+    console.warn(
+      "Unable to persist onboarding completion after import:",
+      error,
+    );
+  }
+};
 
 const restoreOwners = (owners: BackupData["owners"] = []) =>
   owners.map((owner) => ({
@@ -62,12 +121,13 @@ export async function exportBackup() {
   });
 
   const data = {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     owners: ownersList,
     cars: carsList,
     maintenanceEvents,
     images: imagesMetadata,
+    settings: collectPortableSettings(),
   };
 
   const zip = new JSZip();
@@ -147,6 +207,8 @@ export async function importBackup(file: File) {
           }
         },
       );
+      restorePortableSettings(data.settings);
+      markOnboardingComplete();
       return;
     }
 
@@ -174,6 +236,8 @@ export async function importBackup(file: File) {
         );
       },
     );
+    restorePortableSettings(data.settings);
+    markOnboardingComplete();
   } catch (error) {
     throw new Error(toErrorMessage(error));
   }

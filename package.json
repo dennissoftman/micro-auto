@@ -7,7 +7,12 @@
     "build": "node scripts/build.mjs",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npm run build && npx wrangler pages deploy out"
+    "deploy": "npm run build && npx wrangler pages deploy out",
+    "prepare": "husky",
+    "format": "prettier --write ."
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,scss,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
     "dexie": "^4.4.3",
@@ -27,6 +32,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

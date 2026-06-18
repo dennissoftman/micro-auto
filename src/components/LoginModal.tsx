@@ -37,7 +37,9 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
 
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t("authenticationFailed"));
+      setErrorMsg(
+        err instanceof Error ? err.message : t("authenticationFailed"),
+      );
     } finally {
       setIsLoading(false);
     }

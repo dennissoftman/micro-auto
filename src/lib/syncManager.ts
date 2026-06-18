@@ -11,7 +11,7 @@ export class SyncManager {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("sync-start"));
       }
-      
+
       const metadata = await db.syncMetadata.get("default");
       if (!metadata || !metadata.userToken) {
         return; // Not logged in

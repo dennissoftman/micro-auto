@@ -1,3 +1,9 @@
+import {
+  LEGACY_PLATE_FORMAT_KEY,
+  PLATE_FORMATS_KEY,
+  PLATE_VALIDATION_ENABLED_KEY,
+} from "./storageKeys";
+
 export interface PlateFormatBlock {
   type: "letters" | "numbers" | "mixed";
   minLength: number;
@@ -62,8 +68,8 @@ export function getPlateFormatSettings() {
   if (typeof window === "undefined") {
     return { enabled: false, formats: [DEFAULT_PLATE_FORMAT] };
   }
-  const enabled = localStorage.getItem("plateValidationEnabled") === "true";
-  const formatsStr = localStorage.getItem("plateFormats");
+  const enabled = localStorage.getItem(PLATE_VALIDATION_ENABLED_KEY) === "true";
+  const formatsStr = localStorage.getItem(PLATE_FORMATS_KEY);
   let formats: PlateFormatBlock[][] = [DEFAULT_PLATE_FORMAT];
   if (formatsStr) {
     try {
@@ -73,7 +79,7 @@ export function getPlateFormatSettings() {
     }
   } else {
     // Check old single format key
-    const oldFormatStr = localStorage.getItem("plateFormat");
+    const oldFormatStr = localStorage.getItem(LEGACY_PLATE_FORMAT_KEY);
     if (oldFormatStr) {
       try {
         formats = [JSON.parse(oldFormatStr)];
@@ -90,8 +96,11 @@ export function savePlateFormatSettings(
   formats: PlateFormatBlock[][],
 ) {
   if (typeof window !== "undefined") {
-    localStorage.setItem("plateValidationEnabled", enabled ? "true" : "false");
-    localStorage.setItem("plateFormats", JSON.stringify(formats));
+    localStorage.setItem(
+      PLATE_VALIDATION_ENABLED_KEY,
+      enabled ? "true" : "false",
+    );
+    localStorage.setItem(PLATE_FORMATS_KEY, JSON.stringify(formats));
   }
 }
 
