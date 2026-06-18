@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build.mjs",
     "start": "next start",
     "lint": "eslint",
     "deploy": "npm run build && npx wrangler pages deploy out"

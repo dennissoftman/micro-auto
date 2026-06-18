@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { ThemeProvider } from "next-themes";
 import { I18nProvider } from "@/lib/i18n";
 import { OnboardingGate } from "@/components/OnboardingGate";
+import { AppUpdateBanner } from "@/components/AppUpdateBanner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -45,7 +46,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <I18nProvider>
-        <OnboardingGate>{children}</OnboardingGate>
+        <OnboardingGate>
+          {children}
+          <AppUpdateBanner />
+        </OnboardingGate>
       </I18nProvider>
     </ThemeProvider>
   );

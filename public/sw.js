@@ -48,39 +48,58 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Cache hit - return response
-      if (response) {
-        return response;
-      }
+    event.request.mode === "navigate"
+      ? fetch(event.request)
+          .then((networkResponse) => {
+            if (
+              !networkResponse ||
+              networkResponse.status !== 200 ||
+              networkResponse.type !== "basic"
+            ) {
+              return networkResponse;
+            }
 
-      // Network fallback
-      return fetch(event.request)
-        .then((networkResponse) => {
-          // Don't cache if not a valid response
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== "basic"
-          ) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
             return networkResponse;
+          })
+          .catch(() => caches.match("/"))
+      : caches.match(event.request).then((response) => {
+          // Cache hit - return response
+          if (response) {
+            return response;
           }
 
-          // Clone the response because it's a stream
-          const responseToCache = networkResponse.clone();
+          // Network fallback
+          return fetch(event.request)
+            .then((networkResponse) => {
+              // Don't cache if not a valid response
+              if (
+                !networkResponse ||
+                networkResponse.status !== 200 ||
+                networkResponse.type !== "basic"
+              ) {
+                return networkResponse;
+              }
 
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+              // Clone the response because it's a stream
+              const responseToCache = networkResponse.clone();
 
-          return networkResponse;
-        })
-        .catch(() => {
-          // If network fails and it's a navigation request, try to return index
-          if (event.request.mode === "navigate") {
-            return caches.match("/");
-          }
-        });
-    }),
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
+              return networkResponse;
+            })
+            .catch(() => {
+              // If network fails and it's a navigation request, try to return index
+              if (event.request.mode === "navigate") {
+                return caches.match("/");
+              }
+            });
+        }),
   );
 });
