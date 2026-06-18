@@ -18,6 +18,7 @@ import { FormInput } from "@/components/ui/FormInput";
 interface CarEditFormProps {
   car: Car;
   owner: Owner | undefined;
+  usesClients?: boolean;
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -25,6 +26,7 @@ interface CarEditFormProps {
 export function CarEditForm({
   car,
   owner,
+  usesClients = true,
   onCancel,
   onSuccess,
 }: CarEditFormProps) {
@@ -35,8 +37,6 @@ export function CarEditForm({
   const [powerUnit, setPowerUnit] = useState<"hp" | "kW">(() => {
     return car.fuelType === "electric" ? "kW" : "hp";
   });
-
-  const [isCopied, setIsCopied] = useState(false);
 
   const initialPowerDisplayStr = () => {
     if (!car.enginePower) return "";
@@ -65,12 +65,6 @@ export function CarEditForm({
     transmission: car.transmission || "",
     drivetrain: car.drivetrain || "",
   });
-
-  const handleCopyVin = (vin: string) => {
-    navigator.clipboard.writeText(vin);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
 
   const handlePowerUnitChange = (newUnit: "hp" | "kW") => {
     if (newUnit === powerUnit) return;
@@ -164,8 +158,13 @@ export function CarEditForm({
         drivetrain: editFormData.drivetrain || undefined,
       };
 
-      const hasOwnerChanged = newOwnerData.name !== owner?.name || newOwnerData.phone !== owner?.phone;
-      const hasCarChanged = Object.entries(newCarData).some(([k, v]) => car[k as keyof Car] !== v);
+      const hasOwnerChanged =
+        usesClients &&
+        (newOwnerData.name !== owner?.name ||
+          newOwnerData.phone !== owner?.phone);
+      const hasCarChanged = Object.entries(newCarData).some(
+        ([k, v]) => car[k as keyof Car] !== v,
+      );
 
       if (hasOwnerChanged) {
         await updateOwner(car.ownerId, newOwnerData);
@@ -174,8 +173,10 @@ export function CarEditForm({
         await updateCar(car.id!, newCarData);
       }
       onSuccess();
-    } catch (err: any) {
-      setEditError(err.message || "Failed to update car details.");
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "Failed to update car details.",
+      );
     }
   };
 
@@ -213,7 +214,7 @@ export function CarEditForm({
       className="glass rounded-2xl p-6 md:p-8 space-y-6 animate-enter"
     >
       <h2 className="text-xl font-bold tracking-tight">
-        {t("editCarDetails")}
+        {usesClients ? t("editCarDetails") : t("editCar")}
       </h2>
 
       {editError && (
@@ -222,33 +223,38 @@ export function CarEditForm({
         </div>
       )}
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-          {t("clientDetails")}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormInput
-            required
-            label={t("clientName")}
-            id={`${formId}-$1`}
-            value={editFormData.clientName}
-            onChange={(e) =>
-              setEditFormData({ ...editFormData, clientName: e.target.value })
-            }
-            autoComplete="name"
-          />
-          <FormInput
-            label={t("phoneNumber")}
-            id={`${formId}-$1`}
-            type="tel"
-            value={editFormData.clientPhone}
-            onChange={(e) =>
-              setEditFormData({ ...editFormData, clientPhone: e.target.value })
-            }
-            autoComplete="tel"
-          />
+      {usesClients && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+            {t("clientDetails")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput
+              required
+              label={t("clientName")}
+              id={`${formId}-$1`}
+              value={editFormData.clientName}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, clientName: e.target.value })
+              }
+              autoComplete="name"
+            />
+            <FormInput
+              label={t("phoneNumber")}
+              id={`${formId}-$1`}
+              type="tel"
+              value={editFormData.clientPhone}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  clientPhone: e.target.value,
+                })
+              }
+              autoComplete="tel"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mt-2">

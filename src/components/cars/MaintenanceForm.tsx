@@ -21,6 +21,43 @@ interface MaintenanceFormProps {
   onSuccess: () => void;
 }
 
+const maintenanceEventTypes: MaintenanceEvent["type"][] = [
+  "Repair",
+  "Oil Change",
+  "Brake Pad Replacement",
+  "Filter Change",
+  "Inspection",
+  "Other",
+];
+
+const currencies: NonNullable<MaintenanceEvent["currency"]>[] = [
+  "native",
+  "USD",
+];
+
+const paymentStatuses: NonNullable<MaintenanceEvent["paymentStatus"]>[] = [
+  "paid",
+  "unpaid",
+  "partially_paid",
+];
+
+const isMaintenanceEventType = (
+  value: string,
+): value is MaintenanceEvent["type"] =>
+  maintenanceEventTypes.includes(value as MaintenanceEvent["type"]);
+
+const isCurrency = (
+  value: string,
+): value is NonNullable<MaintenanceEvent["currency"]> =>
+  currencies.includes(value as NonNullable<MaintenanceEvent["currency"]>);
+
+const isPaymentStatus = (
+  value: string,
+): value is NonNullable<MaintenanceEvent["paymentStatus"]> =>
+  paymentStatuses.includes(
+    value as NonNullable<MaintenanceEvent["paymentStatus"]>,
+  );
+
 export function MaintenanceForm({
   carId,
   editingEventId,
@@ -166,7 +203,11 @@ export function MaintenanceForm({
             </label>
             <select
               value={eventType}
-              onChange={(e) => setEventType(e.target.value as any)}
+              onChange={(e) => {
+                if (isMaintenanceEventType(e.target.value)) {
+                  setEventType(e.target.value);
+                }
+              }}
               className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-900/50 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
             >
               <option value="Repair">{t("repair")}</option>
@@ -215,7 +256,11 @@ export function MaintenanceForm({
               />
               <select
                 value={eventCurrency}
-                onChange={(e) => setEventCurrency(e.target.value as any)}
+                onChange={(e) => {
+                  if (isCurrency(e.target.value)) {
+                    setEventCurrency(e.target.value);
+                  }
+                }}
                 className="px-3 border-l border-slate-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-0 text-sm font-medium rounded-r-lg cursor-pointer"
               >
                 <option value="native" className="bg-white dark:bg-zinc-950">
@@ -338,9 +383,11 @@ export function MaintenanceForm({
                   />
                   <select
                     value={itemCurrencyInput}
-                    onChange={(e) =>
-                      setItemCurrencyInput(e.target.value as any)
-                    }
+                    onChange={(e) => {
+                      if (isCurrency(e.target.value)) {
+                        setItemCurrencyInput(e.target.value);
+                      }
+                    }}
                     className="px-2 border-l border-slate-200 dark:border-zinc-800 bg-transparent focus:outline-none focus:ring-0 text-sm font-medium rounded-r-lg cursor-pointer"
                   >
                     <option
@@ -438,7 +485,11 @@ export function MaintenanceForm({
             </label>
             <select
               value={paymentStatus}
-              onChange={(e) => setPaymentStatus(e.target.value as any)}
+              onChange={(e) => {
+                if (isPaymentStatus(e.target.value)) {
+                  setPaymentStatus(e.target.value);
+                }
+              }}
               className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-900/50 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
             >
               <option value="paid">{t("paid")}</option>

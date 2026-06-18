@@ -18,8 +18,6 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
     setErrorMsg("");
 
     try {
-      const endpoint = isRegistering ? "/api/auth/register" : "/api/auth/login";
-
       // In a real app, you would point this to your Cloudflare Worker URL
       // const workerUrl = "https://micro-auto-backend.your-username.workers.dev"
       // const res = await fetch(`${workerUrl}${endpoint}`, { ... })
@@ -38,8 +36,8 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
       });
 
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || t("authenticationFailed"));
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : t("authenticationFailed"));
     } finally {
       setIsLoading(false);
     }

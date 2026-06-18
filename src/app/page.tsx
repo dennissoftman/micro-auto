@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useCars, useOwners } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import { MultiFieldSearchIndex } from "@/lib/utils";
@@ -20,37 +20,74 @@ import { useLiveQuery } from "dexie-react-hooks";
 import Dexie from "dexie";
 import { db } from "@/lib/db";
 import type { Car } from "@/lib/db";
+import { useAppPreferences } from "@/lib/appPreferences";
+import { useLocalStorage } from "@/lib/useLocalStorage";
 
 type SortField = "plate" | "model" | "year" | "lastMaintenance";
 type SortDir = "asc" | "desc";
+
+function SortHeader({
+  field,
+  activeField,
+  sortDir,
+  onSort,
+  className,
+  children,
+}: {
+  field: SortField;
+  activeField: SortField;
+  sortDir: SortDir;
+  onSort: (field: SortField) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const active = activeField === field;
+  return (
+    <button
+      onClick={() => onSort(field)}
+      className={`flex items-center gap-1 cursor-pointer select-none hover:text-primary transition-colors ${active ? "text-primary" : ""} ${className ?? ""}`}
+    >
+      {children}
+      <span className="shrink-0">
+        {active ? (
+          sortDir === "asc" ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )
+        ) : (
+          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+        )}
+      </span>
+    </button>
+  );
+}
 
 export default function Dashboard() {
   const cars = useCars();
   const owners = useOwners();
   const { t } = useI18n();
+  const { usesClients } = useAppPreferences();
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useLocalStorage<"grid" | "list">(
+    "dashViewMode",
+    "grid",
+  );
   const [sortField, setSortField] = useState<SortField>("plate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  // Persist view mode
-  useEffect(() => {
-    const saved = localStorage.getItem("dashViewMode");
-    if (saved === "list" || saved === "grid") setViewMode(saved);
-  }, []);
   const toggleView = (mode: "grid" | "list") => {
     setViewMode(mode);
-    localStorage.setItem("dashViewMode", mode);
   };
 
-  const handleSort = (field: SortField) => {
+  const handleSort = useCallback((field: SortField) => {
     if (field === sortField) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
       setSortDir("asc");
     }
-  };
+  }, [sortField]);
 
   const cleanSearchTerm = searchTerm.trim();
 
@@ -85,20 +122,20 @@ export default function Dashboard() {
     return map;
   }, []);
 
-  const getOwnerName = (ownerId: string) => {
+  const getOwnerName = useCallback((ownerId: string) => {
     return owners?.find((o) => o.id === ownerId)?.name || "Unknown Client";
-  };
+  }, [owners]);
 
   const searchIndex = React.useMemo(() => {
     if (!cars) return null;
     return new MultiFieldSearchIndex(cars, (car) => [
       car.licensePlate,
       car.vin || "",
-      getOwnerName(car.ownerId),
+      usesClients ? getOwnerName(car.ownerId) : "",
       car.make,
       car.model,
     ]);
-  }, [cars, owners]);
+  }, [cars, getOwnerName, usesClients]);
 
   const filteredCars = React.useMemo(() => {
     if (!cleanSearchTerm) return cars;
@@ -130,46 +167,15 @@ export default function Dashboard() {
     });
   }, [filteredCars, sortField, sortDir, viewMode, lastMaintenanceMap]);
 
-  const SortHeader = ({
-    field,
-    className,
-    children,
-  }: {
-    field: SortField;
-    className?: string;
-    children: React.ReactNode;
-  }) => {
-    const active = sortField === field;
-    return (
-      <button
-        onClick={() => handleSort(field)}
-        className={`flex items-center gap-1 cursor-pointer select-none hover:text-primary transition-colors ${active ? "text-primary" : ""} ${className ?? ""}`}
-      >
-        {children}
-        <span className="shrink-0">
-          {active ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="w-3 h-3" />
-            ) : (
-              <ChevronDown className="w-3 h-3" />
-            )
-          ) : (
-            <ChevronsUpDown className="w-3 h-3 opacity-40" />
-          )}
-        </span>
-      </button>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {t("clientsAndCars")}
+            {usesClients ? t("clientsAndCars") : t("carsDashboardTitle")}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {t("manageActiveJobs")}
+            {usesClients ? t("manageActiveJobs") : t("manageCarsOnly")}
           </p>
         </div>
 
@@ -178,7 +184,9 @@ export default function Dashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder={t("searchPlaceholder")}
+              placeholder={
+                usesClients ? t("searchPlaceholder") : t("searchCarsPlaceholder")
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
@@ -190,22 +198,20 @@ export default function Dashboard() {
             <button
               onClick={() => toggleView("grid")}
               title={t("viewGrid")}
-              className={`p-2 transition-colors cursor-pointer ${
-                viewMode === "grid"
+              className={`p-2 transition-colors cursor-pointer ${viewMode === "grid"
                   ? "bg-primary text-primary-foreground"
                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-              }`}
+                }`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => toggleView("list")}
               title={t("viewList")}
-              className={`p-2 transition-colors cursor-pointer ${
-                viewMode === "list"
+              className={`p-2 transition-colors cursor-pointer ${viewMode === "list"
                   ? "bg-primary text-primary-foreground"
                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-              }`}
+                }`}
             >
               <List className="w-4 h-4" />
             </button>
@@ -248,7 +254,11 @@ export default function Dashboard() {
           </div>
           <h3 className="text-lg font-medium">{t("noCarsFound")}</h3>
           <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md">
-            {searchTerm ? t("tryAdjustingSearch") : t("getStartedAdding")}
+            {searchTerm
+              ? t("tryAdjustingSearch")
+              : usesClients
+                ? t("getStartedAdding")
+                : t("getStartedAddingCar")}
           </p>
           {!searchTerm && (
             <Link
@@ -283,20 +293,37 @@ export default function Dashboard() {
                     <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
                       {car.model}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasUnpaid ? "bg-red-500 animate-pulse" : "bg-green-500"}`}
-                      />
-                      {getOwnerName(car.ownerId)}
-                      {hasUnpaid && (
+                    {usesClients ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                         <span
-                          title={t("unpaid")}
-                          className="flex items-center shrink-0 ml-1 animate-enter"
-                        >
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        </span>
-                      )}
-                    </p>
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasUnpaid ? "bg-red-500 animate-pulse" : "bg-green-500"}`}
+                        />
+                        {getOwnerName(car.ownerId)}
+                        {hasUnpaid && (
+                          <span
+                            title={t("unpaid")}
+                            className="flex items-center shrink-0 ml-1 animate-enter"
+                          >
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          </span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasUnpaid ? "bg-red-500 animate-pulse" : "bg-green-500"}`}
+                        />
+                        {car.make} {car.model}
+                        {hasUnpaid && (
+                          <span
+                            title={t("unpaid")}
+                            className="flex items-center shrink-0 ml-1 animate-enter"
+                          >
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </Link>
@@ -308,16 +335,42 @@ export default function Dashboard() {
         <div className="glass rounded-2xl overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-2.5 border-b border-slate-100 dark:border-zinc-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
             <div className="col-span-3">
-              <SortHeader field="plate">{t("licensePlate")}</SortHeader>
+              <SortHeader
+                field="plate"
+                activeField={sortField}
+                sortDir={sortDir}
+                onSort={handleSort}
+              >
+                {t("licensePlate")}
+              </SortHeader>
             </div>
             <div className="col-span-4">
-              <SortHeader field="model">{t("makeModel")}</SortHeader>
+              <SortHeader
+                field="model"
+                activeField={sortField}
+                sortDir={sortDir}
+                onSort={handleSort}
+              >
+                {t("makeModel")}
+              </SortHeader>
             </div>
             <div className="col-span-2">
-              <SortHeader field="year">{t("year")}</SortHeader>
+              <SortHeader
+                field="year"
+                activeField={sortField}
+                sortDir={sortDir}
+                onSort={handleSort}
+              >
+                {t("year")}
+              </SortHeader>
             </div>
             <div className="col-span-3">
-              <SortHeader field="lastMaintenance">
+              <SortHeader
+                field="lastMaintenance"
+                activeField={sortField}
+                sortDir={sortDir}
+                onSort={handleSort}
+              >
                 {t("lastService")}
               </SortHeader>
             </div>

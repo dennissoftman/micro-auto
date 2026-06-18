@@ -24,6 +24,7 @@ import { CarEditForm } from "@/components/cars/CarEditForm";
 import { MaintenanceForm } from "@/components/cars/MaintenanceForm";
 import { TimelineCard } from "@/components/cars/TimelineCard";
 import { ImageManager } from "@/components/cars/ImageManager";
+import { useAppPreferences } from "@/lib/appPreferences";
 
 interface CarDetailProps {
   carId: string;
@@ -31,6 +32,7 @@ interface CarDetailProps {
 
 export default function CarDetail({ carId }: CarDetailProps) {
   const { t } = useI18n();
+  const { usesClients } = useAppPreferences();
 
   const car = useCar(carId);
   const history = (useMaintenanceEvents(carId) as MaintenanceEvent[]) || [];
@@ -42,7 +44,6 @@ export default function CarDetail({ carId }: CarDetailProps) {
     null,
   );
   const [isCopied, setIsCopied] = useState(false);
-  const [powerUnit, setPowerUnit] = useState<"hp" | "kW">("hp");
   const [quickPayEventId, setQuickPayEventId] = useState<number | null>(null);
 
   const handleCopyVin = (vin: string) => {
@@ -119,6 +120,7 @@ export default function CarDetail({ carId }: CarDetailProps) {
         <CarEditForm
           car={car}
           owner={owner}
+          usesClients={usesClients}
           onCancel={() => setIsEditingCar(false)}
           onSuccess={() => setIsEditingCar(false)}
         />
@@ -144,10 +146,12 @@ export default function CarDetail({ carId }: CarDetailProps) {
                     <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
                       {car.licensePlate}
                     </span>
-                    <span className="text-slate-500 dark:text-slate-400">
-                      {t("owner")}: {owner?.name || "Unknown"}{" "}
-                      {owner?.phone ? `(${owner?.phone})` : ""}
-                    </span>
+                    {usesClients && (
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {t("owner")}: {owner?.name || "Unknown"}{" "}
+                        {owner?.phone ? `(${owner?.phone})` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

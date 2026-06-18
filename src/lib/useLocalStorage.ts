@@ -52,7 +52,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   const parsedValue = useMemo(() => {
     try {
       return JSON.parse(storeValue) as T;
-    } catch (e) {
+    } catch {
       return initialValue;
     }
   }, [storeValue, initialValue]);

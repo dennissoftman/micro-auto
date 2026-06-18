@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useImages, addImage, deleteImage } from "@/lib/hooks";
 import { X, Upload, Image as ImageIcon, Maximize2 } from "lucide-react";
-import type { ImageAttachment } from "@/lib/db";
 
 interface ImageManagerProps {
   entityId?: string | number;
@@ -14,83 +13,47 @@ interface ImageManagerProps {
   className?: string;
 }
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_FILES: File[] = [];
+
+function ObjectUrlImage({
+  source,
+  alt,
+  className,
+}: {
+  source: Blob;
+  alt: string;
+  className: string;
+}) {
+  const [url] = useState(() => URL.createObjectURL(source));
+
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  // Blob object URLs are already local browser resources, so next/image adds no value here.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt={alt} className={className} />;
+}
 
 export function ImageManager({
   entityId,
   entityType,
-  pendingImages = EMPTY_ARRAY,
+  pendingImages = EMPTY_FILES,
   onPendingImagesChange,
   className = "",
 }: ImageManagerProps) {
   const { t } = useI18n();
   const dbImagesRaw = useImages(entityId, entityType);
-  const dbImages = dbImagesRaw || EMPTY_ARRAY;
+  const dbImages = dbImagesRaw || [];
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-  const [objectUrls, setObjectUrls] = useState<Record<string, string>>({});
-
-  // Generate object URLs for db images and pending files to display them
-  useEffect(() => {
-    const urls: Record<string, string> = {};
-
-    // DB Images
-    for (const img of dbImages) {
-      if (img.id && !objectUrls[img.id]) {
-        urls[img.id] = URL.createObjectURL(img.blob);
-      } else if (img.id) {
-        urls[img.id] = objectUrls[img.id];
-      }
-    }
-
-    // Pending Images
-    pendingImages.forEach((file, idx) => {
-      const key = `pending_${idx}`;
-      if (!objectUrls[key]) {
-        urls[key] = URL.createObjectURL(file);
-      } else {
-        urls[key] = objectUrls[key];
-      }
-    });
-
-    setObjectUrls((prev) => {
-      let changed = false;
-      const allNewKeys = new Set([
-        ...dbImages.map((img) => img.id!),
-        ...pendingImages.map((_, i) => `pending_${i}`),
-      ]);
-
-      // Cleanup old URLs
-      Object.keys(prev).forEach((key) => {
-        if (!allNewKeys.has(key)) {
-          URL.revokeObjectURL(prev[key]);
-          changed = true;
-        }
-      });
-
-      if (Object.keys(urls).length !== Object.keys(prev).length) {
-        changed = true;
-      } else {
-        for (const key in urls) {
-          if (urls[key] !== prev[key]) {
-            changed = true;
-            break;
-          }
-        }
-      }
-
-      return changed ? urls : prev;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dbImages, pendingImages]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(objectUrls).forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
+  const [fullscreenImage, setFullscreenImage] = useState<{
+    source: Blob;
+    name: string;
+    key: string;
+  } | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -132,14 +95,14 @@ export function ImageManager({
       id: img.id!,
       index: undefined,
       isPending: false,
-      url: objectUrls[img.id!] || "",
+      source: img.blob,
       name: img.name,
     })),
     ...pendingImages.map((file, idx) => ({
-      id: `pending_${idx}`,
+      id: `pending_${file.name}_${file.size}_${file.lastModified}_${idx}`,
       index: idx,
       isPending: true,
-      url: objectUrls[`pending_${idx}`] || "",
+      source: file,
       name: file.name,
     })),
   ];
@@ -176,17 +139,22 @@ export function ImageManager({
               key={item.id}
               className="group relative aspect-square bg-slate-100 dark:bg-zinc-900 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-sm animate-enter"
             >
-              {item.url && (
-                <img
-                  src={item.url}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-              )}
+              <ObjectUrlImage
+                key={item.id}
+                source={item.source}
+                alt={item.name}
+                className="w-full h-full object-cover"
+              />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setFullscreenImage(item.url)}
+                  onClick={() =>
+                    setFullscreenImage({
+                      source: item.source,
+                      name: item.name,
+                      key: item.id,
+                    })
+                  }
                   className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm transition-colors"
                   title="View full screen"
                 >
@@ -237,12 +205,17 @@ export function ImageManager({
           >
             <X className="w-6 h-6" />
           </button>
-          <img
-            src={fullscreenImage}
-            alt="Fullscreen"
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()} // Prevent click from closing immediately if clicking on image
-          />
+          <div
+            className="max-w-full max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ObjectUrlImage
+              key={fullscreenImage.key}
+              source={fullscreenImage.source}
+              alt={fullscreenImage.name}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            />
+          </div>
         </div>
       )}
     </div>

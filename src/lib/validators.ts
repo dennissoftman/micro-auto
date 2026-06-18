@@ -65,3 +65,7 @@ export const MaintenanceEventSchema = z.object({
   updatedAt: z.date().optional(),
   deletedAt: z.date().optional(),
 });
+
+export type OwnerInput = z.infer<typeof OwnerSchema>;
+export type CarInput = z.infer<typeof CarSchema>;
+export type MaintenanceEventInput = z.infer<typeof MaintenanceEventSchema>;

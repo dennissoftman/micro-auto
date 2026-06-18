@@ -25,7 +25,7 @@ export async function addOwner(
 ) {
   const parsed = OwnerSchema.parse(owner);
   return db.owners.add({
-    ...(parsed as any),
+    ...parsed,
     id: generateUUID(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -55,7 +55,7 @@ export function useCar(id: string) {
 export async function addCar(car: Omit<Car, "id" | "createdAt" | "updatedAt">) {
   const parsed = CarSchema.parse(car);
   return db.cars.add({
-    ...(parsed as any),
+    ...parsed,
     id: generateUUID(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -107,7 +107,7 @@ export async function addMaintenanceEvent(
 ) {
   const parsed = MaintenanceEventSchema.parse(event);
   return db.maintenanceEvents.add({
-    ...(parsed as any),
+    ...parsed,
     createdAt: new Date(),
   });
 }

@@ -33,7 +33,8 @@ export function QuickPayPanel({
     const totalCost = event.cost || 0;
 
     let newPaidAmount = currentPaid + payment;
-    let newStatus = "partially_paid";
+    let newStatus: NonNullable<MaintenanceEvent["paymentStatus"]> =
+      "partially_paid";
 
     if (!isPartial) {
       newPaidAmount = totalCost;
@@ -43,7 +44,7 @@ export function QuickPayPanel({
     }
 
     await updateMaintenanceEvent(event.id, {
-      paymentStatus: newStatus as any,
+      paymentStatus: newStatus,
       paidAmount: newPaidAmount,
       replacedItems: newStatus === "paid" ? updatedItems : event.replacedItems,
     });

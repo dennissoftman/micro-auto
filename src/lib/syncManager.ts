@@ -18,10 +18,10 @@ export class SyncManager {
       }
 
       // 1. Pull changes from Cloudflare
-      await this.pullChanges(metadata);
+      await this.pullChanges();
 
       // 2. Push local changes to Cloudflare
-      await this.pushChanges(metadata);
+      await this.pushChanges();
     } catch (err) {
       console.error("Sync failed:", err);
     } finally {
@@ -32,14 +32,14 @@ export class SyncManager {
     }
   }
 
-  private async pullChanges(metadata: any) {
+  private async pullChanges() {
     // TODO: fetch(`/api/sync/pull?since=${metadata.lastSyncTimestamp}`)
     // Apply changes to Dexie (Upsert)
     // Update lastSyncTimestamp in Dexie
     console.log("Mock pull changes...");
   }
 
-  private async pushChanges(metadata: any) {
+  private async pushChanges() {
     // TODO: Find all records in Dexie where updatedAt > metadata.lastSyncTimestamp (or where deletedAt is set and not synced)
     // POST to `/api/sync/push`
     // If success, update lastSyncTimestamp

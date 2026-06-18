@@ -15,12 +15,13 @@ import {
   decodeVin,
   isValidVin,
   normalizeSmartCasing,
-  MultiFieldSearchIndex,
 } from "@/lib/utils";
+import { useAppPreferences } from "@/lib/appPreferences";
 
 export default function NewCarPage() {
   const router = useRouter();
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
+  const { usesClients } = useAppPreferences();
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -45,20 +46,19 @@ export default function NewCarPage() {
   });
 
   const [powerUnit, setPowerUnit] = useState<"hp" | "kW">("hp");
-  const owners = useOwners() || [];
+  const ownersRaw = useOwners();
 
   const sortedOwners = useMemo(() => {
-    return [...owners].sort((a, b) => a.name.localeCompare(b.name));
-  }, [owners]);
+    return [...(ownersRaw || [])].sort((a, b) => a.name.localeCompare(b.name));
+  }, [ownersRaw]);
 
   useEffect(() => {
     const cleanVin = formData.vin.trim();
     if (!isValidVin(cleanVin)) {
       return;
     }
-
-    setIsDecodingVin(true);
     const delayDebounceFn = setTimeout(async () => {
+      setIsDecodingVin(true);
       try {
         const decoded = await decodeVin(cleanVin);
         setFormData((prev) => {
@@ -91,7 +91,7 @@ export default function NewCarPage() {
             drivetrain: decoded.drivetrain || prev.drivetrain,
           };
         });
-      } catch (err) {
+      } catch {
         // Silently ignore decode failures
       } finally {
         setIsDecodingVin(false);
@@ -186,12 +186,14 @@ export default function NewCarPage() {
       const normalizedMake = normalizeSmartCasing(formData.make);
       const normalizedModel = normalizeSmartCasing(formData.model);
 
-      if (!formData.ownerId) {
+      if (usesClients && !formData.ownerId) {
         setError(t("selectClientFirst") || "Please select a client.");
         setIsSubmitting(false);
         return;
       }
-      const ownerId = formData.ownerId;
+      const ownerId = usesClients
+        ? formData.ownerId
+        : await addOwner({ name: `Car: ${normalizedPlate}` });
 
       let powerHp: number | undefined;
       const parsedPower = parseFloat(formData.enginePower);
@@ -222,14 +224,18 @@ export default function NewCarPage() {
         drivetrain: formData.drivetrain || undefined,
       });
       router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Failed to add car. Please try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to add car. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const optionalText = locale === "ru" ? "опционально" : "optional";
+  const optionalText = t("optional");
 
   const fuelOptions = [
     { value: "", label: `— ${t("fuelType")} —` },
@@ -271,7 +277,7 @@ export default function NewCarPage() {
 
       <div className="glass rounded-2xl p-6 md:p-8">
         <h1 className="text-2xl font-bold tracking-tight mb-6">
-          {t("addNewClientCar")}
+          {usesClients ? t("addNewClientCar") : t("addNewCar")}
         </h1>
 
         {error && (
@@ -281,50 +287,52 @@ export default function NewCarPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                {t("clientDetails")}
-              </h3>
-            </div>
+          {usesClients && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                  {t("clientDetails")}
+                </h3>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5 md:col-span-2">
-                <label htmlFor="ownerId" className="text-sm font-medium">
-                  {t("client")}
-                </label>
-                <select
-                  required
-                  id="ownerId"
-                  name="ownerId"
-                  value={formData.ownerId}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-900/50 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
-                >
-                  <option value="" disabled>
-                    — {t("selectClient")} —
-                  </option>
-                  {sortedOwners.map((owner) => (
-                    <option
-                      key={owner.id}
-                      value={owner.id}
-                      className="bg-white dark:bg-zinc-950"
-                    >
-                      {owner.name} {owner.phone ? `(${owner.phone})` : ""}
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-2 text-right">
-                  <Link
-                    href="/clients"
-                    className="text-xs text-primary hover:underline"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label htmlFor="ownerId" className="text-sm font-medium">
+                    {t("client")}
+                  </label>
+                  <select
+                    required
+                    id="ownerId"
+                    name="ownerId"
+                    value={formData.ownerId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-900/50 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer"
                   >
-                    + {t("addNewClient")}
-                  </Link>
+                    <option value="" disabled>
+                      — {t("selectClient")} —
+                    </option>
+                    {sortedOwners.map((owner) => (
+                      <option
+                        key={owner.id}
+                        value={owner.id}
+                        className="bg-white dark:bg-zinc-950"
+                      >
+                        {owner.name} {owner.phone ? `(${owner.phone})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2 text-right">
+                    <Link
+                      href="/clients"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      + {t("addNewClient")}
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mt-2">
@@ -642,7 +650,11 @@ export default function NewCarPage() {
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? t("saving") : t("saveClientCar")}
+              {isSubmitting
+                ? t("saving")
+                : usesClients
+                  ? t("saveClientCar")
+                  : t("saveCar")}
             </button>
           </div>
         </form>

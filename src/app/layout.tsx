@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Sidebar } from "@/components/Sidebar";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-geist-sans" });
 
 export const metadata: Metadata = {
   title: "µAuto - Smart Mechanic Management",
@@ -21,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans min-h-screen flex flex-col md:flex-row antialiased`}
+        className="font-sans min-h-screen flex flex-col md:flex-row antialiased"
       >
         <Providers>
           <Sidebar />

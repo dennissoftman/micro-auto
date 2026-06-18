@@ -134,7 +134,9 @@ export function TimelineCard({
               {t("recommendation")}
             </span>
             <p className="text-sm text-slate-700 dark:text-slate-300 italic whitespace-pre-wrap">
-              "{event.recommendations}"
+              <span>&quot;</span>
+              {event.recommendations}
+              <span>&quot;</span>
             </p>
           </div>
         )}

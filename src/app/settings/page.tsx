@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -12,6 +12,8 @@ import {
   Plus,
   Minus,
   Trash2,
+  Users,
+  Car,
 } from "lucide-react";
 import {
   getPlateFormatSettings,
@@ -21,21 +23,31 @@ import {
   DEFAULT_PLATE_FORMAT,
   type PlateFormatBlock,
 } from "@/lib/utils";
+import { useAppPreferences } from "@/lib/appPreferences";
+import type { Locale } from "@/lib/dictionaries";
+
+const languageOptions: Array<{ value: Locale; label: string }> = [
+  { value: "en", label: "English" },
+  { value: "ru", label: "Русский" },
+  { value: "uk", label: "Українська" },
+];
+
+const isPlateFormatBlockType = (
+  value: string,
+): value is PlateFormatBlock["type"] =>
+  value === "letters" || value === "numbers" || value === "mixed";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
+  const { clientTrackingMode, setClientTrackingMode } = useAppPreferences();
 
-  const [plateValidationEnabled, setPlateValidationEnabled] = useState(false);
-  const [plateFormats, setPlateFormats] = useState<PlateFormatBlock[][]>([
-    DEFAULT_PLATE_FORMAT,
-  ]);
-
-  useEffect(() => {
-    const { enabled, formats } = getPlateFormatSettings();
-    setPlateValidationEnabled(enabled);
-    setPlateFormats(formats);
-  }, []);
+  const [plateValidationEnabled, setPlateValidationEnabled] = useState(
+    () => getPlateFormatSettings().enabled,
+  );
+  const [plateFormats, setPlateFormats] = useState<PlateFormatBlock[][]>(
+    () => getPlateFormatSettings().formats,
+  );
 
   const handleToggleValidation = (checked: boolean) => {
     setPlateValidationEnabled(checked);
@@ -181,18 +193,63 @@ export default function SettingsPage() {
             <Globe className="w-5 h-5 text-slate-500" />
             {t("language")}
           </h3>
-          <div className="flex bg-slate-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit border border-slate-200 dark:border-zinc-700/50">
+          <div className="flex flex-wrap bg-slate-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit border border-slate-200 dark:border-zinc-700/50">
+            {languageOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setLocale(option.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${locale === option.value ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Client Tracking Settings */}
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-zinc-800">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Users className="w-5 h-5 text-slate-500" />
+            {t("clientTracking")}
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
             <button
-              onClick={() => setLocale("en")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${locale === "en" ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}
+              type="button"
+              onClick={() => setClientTrackingMode("clients")}
+              className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer ${
+                clientTrackingMode === "clients"
+                  ? "border-primary bg-primary/10"
+                  : "border-slate-200 dark:border-zinc-800 hover:border-primary/40"
+              }`}
             >
-              English
+              <Users className="w-5 h-5 text-slate-500 mt-0.5" />
+              <span>
+                <span className="block text-sm font-semibold">
+                  {t("trackClients")}
+                </span>
+                <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+                  {t("trackClientsDesc")}
+                </span>
+              </span>
             </button>
             <button
-              onClick={() => setLocale("ru")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${locale === "ru" ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}
+              type="button"
+              onClick={() => setClientTrackingMode("cars_only")}
+              className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer ${
+                clientTrackingMode === "cars_only"
+                  ? "border-primary bg-primary/10"
+                  : "border-slate-200 dark:border-zinc-800 hover:border-primary/40"
+              }`}
             >
-              Русский
+              <Car className="w-5 h-5 text-slate-500 mt-0.5" />
+              <span>
+                <span className="block text-sm font-semibold">
+                  {t("carsOnly")}
+                </span>
+                <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+                  {t("carsOnlyDesc")}
+                </span>
+              </span>
             </button>
           </div>
         </div>
@@ -264,11 +321,13 @@ export default function SettingsPage() {
                             <select
                               value={block.type}
                               onChange={(e) =>
-                                handleUpdateBlockType(
-                                  fmtIdx,
-                                  idx,
-                                  e.target.value as any,
-                                )
+                                isPlateFormatBlockType(e.target.value)
+                                  ? handleUpdateBlockType(
+                                      fmtIdx,
+                                      idx,
+                                      e.target.value,
+                                    )
+                                  : undefined
                               }
                               className="bg-transparent border-none font-bold text-[10px] focus:outline-none cursor-pointer uppercase tracking-wider"
                             >

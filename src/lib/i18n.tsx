@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext } from "react";
 import { dictionaries, Locale } from "./dictionaries";
+import { useLocalStorage } from "./useLocalStorage";
 
 type I18nContextType = {
   locale: Locale;
@@ -14,25 +15,26 @@ type I18nContextType = {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
-  const [mounted, setMounted] = useState(false);
+function getDefaultLocale(): Locale {
+  if (typeof window === "undefined") return "en";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("locale") as Locale;
-    if (saved && dictionaries[saved]) {
-      setLocaleState(saved);
-    } else {
-      if (navigator.language.startsWith("ru")) {
-        setLocaleState("ru");
-      }
-    }
-    setMounted(true);
-  }, []);
+  const saved = localStorage.getItem("locale") as Locale | null;
+  if (saved && dictionaries[saved]) return saved;
+
+  const browserLanguage = navigator.language.toLowerCase();
+  if (browserLanguage.startsWith("uk")) return "uk";
+  if (browserLanguage.startsWith("ru")) return "ru";
+  return "en";
+}
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocaleState] = useLocalStorage<Locale>(
+    "locale",
+    getDefaultLocale(),
+  );
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem("locale", newLocale);
   };
 
   const t = (
@@ -49,10 +51,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
     return str;
   };
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-slate-50 dark:bg-[#09090b]" />;
-  }
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t }}>
